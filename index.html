@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What movie AREN'T we watching?</title>
+  <style>
+    :root {
+      --bg: #090012;
+      --panel: #170d2d;
+      --panel-2: #21103b;
+      --text: #fffdf7;
+      --muted: #b995ff;
+      --gold: #ffd447;
+      --gold-dark: #b87505;
+      --danger: #ff465d;
+      --blue: #62b8ef;
+      --green: #39b54a;
+      --purple-border: #57327e;
+      --shadow: rgba(0,0,0,.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 212, 71, .13), transparent 22%),
+        radial-gradient(circle at 80% 65%, rgba(74, 32, 120, .35), transparent 32%),
+        radial-gradient(circle at 15% 55%, rgba(30, 8, 72, .65), transparent 36%),
+        linear-gradient(180deg, #06000d 0%, #0b0019 54%, #090012 100%);
+      overflow: hidden;
+      letter-spacing: .02em;
+    }
+
+    .app {
+      height: 100vh;
+      width: min(1500px, 98vw);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 350px minmax(0, 1fr) 165px;
+      gap: 18px;
+      align-items: center;
+      padding: 10px 18px 12px;
+      overflow: hidden;
+    }
+
+    .sidePanel, .statusPanel {
+      background: linear-gradient(180deg, rgba(32, 16, 59, .97), rgba(18, 8, 36, .97));
+      border: 3px solid var(--purple-border);
+      border-radius: 23px;
+      box-shadow: 0 28px 60px var(--shadow), inset 0 0 0 1px rgba(255,255,255,.05);
+    }
+
+    .sidePanel {
+      padding: 18px 18px;
+      align-self: center;
+      height: calc(100vh - 22px);
+      max-height: 900px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panelTitle, .sectionTitle {
+      font-size: 1.35rem;
+      line-height: 1;
+      text-transform: uppercase;
+      margin: 4px 0 10px;
+      text-shadow: 0 3px 0 #000;
+    }
+
+    .sectionTitle {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 1.08rem;
+      margin-top: 14px;
+    }
+
+    .sectionTitle::before, .sectionTitle::after {
+      content: "";
+      height: 2px;
+      background: var(--purple-border);
+    }
+
+    input {
+      width: 100%;
+      border: 0;
+      border-radius: 9px;
+      padding: 13px 14px;
+      font-family: system-ui, sans-serif;
+      font-size: 1.05rem;
+      outline: 0;
+      color: #28213a;
+      background: #fff;
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.08);
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 13px 16px;
+      margin-top: 12px;
+      cursor: pointer;
+      font: 900 1.25rem/1 Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      text-transform: uppercase;
+      color: #050509;
+      box-shadow: 0 7px 0 rgba(0,0,0,.34);
+      transition: transform .12s ease, box-shadow .12s ease, filter .2s ease, opacity .2s ease;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.05); }
+    button:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0,0,0,.34); }
+    button:disabled { opacity: .43; cursor: not-allowed; }
+
+    #soundBtn {
+      margin-top: 10px;
+      background: linear-gradient(180deg, #ffd447 0%, #ffb703 100%);
+    }
+
+    #soundBtn.muted {
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+      color: #fff;
+    }
+
+    #addBtn { background: linear-gradient(#ffd457, #ffb92e); }
+    #shuffleBtn { background: linear-gradient(#74c8fa, #52a9df); }
+    #resetBtn { background: linear-gradient(#ff5369, #eb334d); color: #fff; }
+    #spinBtn { margin-top: auto; background: linear-gradient(#55d65c, #29a93f); font-size: 1.35rem; padding: 16px 14px; }
+    #spinBtn::before { content: "◒ "; font-size: 1.1rem; }
+
+    .movieList {
+      flex: 1;
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      overflow: auto;
+      padding-right: 3px;
+      min-height: 160px;
+    }
+
+    .movieItem {
+      display: grid;
+      grid-template-columns: 26px 1fr 28px;
+      gap: 10px;
+      align-items: center;
+      min-height: 38px;
+      padding: 6px 10px;
+      border: 2px solid rgba(113, 80, 156, .8);
+      border-radius: 8px;
+      background: rgba(10, 3, 28, .72);
+      font-family: system-ui, sans-serif;
+      font-weight: 850;
+      color: #fff;
+    }
+
+    .movieNumber { font-size: 1.05rem; }
+    .hiddenTitle {
+      font-family: "Arial Black", "Trebuchet MS", system-ui, sans-serif;
+      letter-spacing: .18em;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .revealedTitle { letter-spacing: 0; color: var(--gold); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .removeBtn {
+      width: 28px;
+      height: 28px;
+      margin: 0;
+      padding: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--danger);
+      box-shadow: none;
+      font: 900 1.8rem/1 system-ui, sans-serif;
+    }
+
+    .centerStage {
+      height: calc(100vh - 22px);
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      align-items: center;
+      justify-items: center;
+      position: relative;
+    }
+
+    h1 {
+      margin: 0;
+      width: 100%;
+      text-align: center;
+      font-size: clamp(2.35rem, 4.5vw, 4.55rem);
+      line-height: .9;
+      letter-spacing: .012em;
+      text-transform: uppercase;
+      text-shadow: 0 7px 0 #000, 0 0 24px rgba(255,255,255,.1);
+      white-space: nowrap;
+    }
+
+    .winnerBox.hiddenAtFinish {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .winnerBox {
+      width: min(850px, 96%);
+      min-height: 94px;
+      margin: 10px 0 4px;
+      border: 4px solid var(--gold);
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      padding: 8px 18px;
+      background: rgba(12, 7, 19, .76);
+      box-shadow:
+        0 0 18px rgba(255, 212, 71, .85),
+        inset 0 0 28px rgba(255, 212, 71, .09);
+      text-align: center;
+    }
+
+    .winnerBox .small {
+      color: var(--gold);
+      font-size: clamp(1rem, 1.55vw, 1.45rem);
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 6px;
+      text-shadow: 0 3px 0 #000;
+    }
+
+    #winnerBanner {
+      font-family: "Arial Black", Impact, Haettenschweiler, "Arial Narrow Bold", system-ui, sans-serif;
+      font-size: clamp(1.7rem, 4.1vw, 4.05rem);
+      line-height: .92;
+      color: var(--gold);
+      text-transform: uppercase;
+      text-shadow: 0 5px 0 #000, 0 0 20px rgba(255, 212, 71, .36);
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .wheelArea {
+      width: min(720px, calc(100vh - 245px), calc(100vw - 590px));
+      max-width: 100%;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      position: relative;
+      margin-top: 4px;
+    }
+
+    .stand {
+      position: absolute;
+      bottom: 0;
+      width: 70%;
+      height: 15%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .stand::before, .stand::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      width: 17px;
+      height: 150px;
+      background: linear-gradient(90deg, #2b2235, #4b3c58, #1d1724);
+      border: 3px solid #50435c;
+      transform-origin: bottom;
+    }
+    .stand::before { left: 13%; transform: rotate(16deg); }
+    .stand::after { right: 13%; transform: rotate(-16deg); }
+    .standBase {
+      position: absolute;
+      bottom: 0;
+      left: 8%;
+      right: 8%;
+      height: 22px;
+      background: linear-gradient(#42364c, #1e1725);
+      border: 3px solid #50435c;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .wheelWrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      filter: drop-shadow(0 24px 22px rgba(0,0,0,.62));
+    }
+
+    #wheel {
+      width: 94%;
+      height: 94%;
+      border-radius: 50%;
+      position: relative;
+      overflow: visible;
+      transition: transform 4.6s cubic-bezier(.12,.72,.08,1);
+      transform: rotate(0deg);
+      background: #222;
+      border: 0;
+      z-index: 9;
+      box-shadow:
+        inset 0 0 0 2px rgba(0,0,0,.7),
+        inset 0 0 34px rgba(0,0,0,.3);
+    }
+
+    .wheelFace {
+      position: absolute;
+      inset: 4.8%;
+      border-radius: 50%;
+      background: conic-gradient(var(--segments));
+      box-shadow: inset 0 0 25px rgba(0,0,0,.25);
+    }
+
+    .divider {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 49%;
+      height: 3px;
+      background: rgba(0,0,0,.86);
+      transform-origin: 0 50%;
+      transform: rotate(var(--angle));
+      z-index: 3;
+    }
+
+    .goldRim {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 8;
+      background:
+        radial-gradient(circle, transparent 68.8%, rgba(90,48,0,.52) 69.1%, transparent 70%),
+        radial-gradient(circle at 34% 28%, rgba(255,255,255,.65), transparent 14%),
+        conic-gradient(from 0deg, #ffe371, #ffc42a, #a96504, #ffe371, #fbbd22, #8b5600, #ffe371);
+      -webkit-mask: radial-gradient(circle, transparent 76%, #000 76.4%);
+      mask: radial-gradient(circle, transparent 76%, #000 76.4%);
+      box-shadow: 0 0 0 6px #724b05;
+    }
+
+    .innerRim {
+      position: absolute;
+      inset: 5.2%;
+      border-radius: 50%;
+      border: 4px solid rgba(80,42,0,.9);
+      pointer-events: none;
+      z-index: 7;
+    }
+
+    .peg {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 34% 25%, #8c8580 0%, #4c4748 44%, #242124 72%, #09080a 100%);
+      border: 2px solid rgba(16, 13, 18, .95);
+      transform: rotate(var(--angle)) translateX(calc(min(720px, calc(100vh - 245px), calc(100vw - 590px)) * .435));
+      box-shadow: inset 0 2px 2px rgba(255,255,255,.2), inset 0 -3px 4px rgba(0,0,0,.62), 0 2px 4px rgba(0,0,0,.62);
+      z-index: 12;
+      pointer-events: none;
+    }
+
+    .hub {
+      position: absolute;
+      width: 15%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 36% 25%, #fff9bc, #ffd954 43%, #c17e07 73%, #4a2c02 100%);
+      border: 5px solid #4c2c00;
+      outline: 7px solid var(--gold);
+      box-shadow: 0 9px 0 #5b3500, 0 12px 22px rgba(0,0,0,.58);
+      z-index: 14;
+    }
+
+    .pointer {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -5%);
+      width: 72px;
+      height: 108px;
+      z-index: 20;
+      filter: drop-shadow(0 7px 5px rgba(0,0,0,.55));
+    }
+
+    .pointer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 26%, #fff4a7, #ffd24a 37%, #c4820a 88%);
+      clip-path: polygon(50% 100%, 14% 42%, 15% 27%, 25% 12%, 39% 4%, 50% 2%, 61% 4%, 75% 12%, 85% 27%, 86% 42%);
+      border: 4px solid #5a3700;
+      transform-origin: 50% 14%;
+    }
+
+    .pointer.flick::before {
+      animation: pointerFlick .13s ease-out;
+    }
+
+    @keyframes pointerFlick {
+      0% { transform: rotate(0deg); }
+      42% { transform: rotate(-10deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+
+
+    .posterFrame {
+      position: absolute;
+      inset: 4%;
+      z-index: 30;
+      display: none;
+      place-items: center;
+      padding: 3.2%;
+      border-radius: 30px;
+      background: linear-gradient(145deg, #ffe371, #c4820a 42%, #5a3700 100%);
+      box-shadow: 0 22px 35px rgba(0,0,0,.6), inset 0 0 0 5px rgba(255,255,255,.24);
+    }
+
+    .posterFrame.visible { display: grid; }
+
+    .posterFrame img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 22px;
+      object-fit: contain;
+      background: #111;
+      box-shadow: 0 14px 24px rgba(0,0,0,.55);
+    }
+
+    .posterFallback {
+      display: none;
+      width: 100%;
+      height: 100%;
+      border-radius: 22px;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      color: #fff8df;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,.16), transparent 35%),
+        linear-gradient(145deg, #27193a, #111);
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+      text-shadow: 0 5px 12px rgba(0,0,0,.7);
+    }
+
+    .finalIntro {
+      display: block;
+      font-size: clamp(1.3rem, 2.8vw, 2.5rem);
+      line-height: 1;
+      margin-bottom: 18px;
+      color: #fff3bd;
+    }
+
+    .finalTitle {
+      display: block;
+      font-size: clamp(2.15rem, 5.5vw, 5.4rem);
+      line-height: .9;
+      color: var(--gold);
+      overflow-wrap: anywhere;
+    }
+
+    .posterFrame.loading .posterFallback,
+    .posterFrame.noPoster .posterFallback { display: grid; }
+
+    .posterFrame.loading img,
+    .posterFrame.noPoster img { display: none; }
+
+    .wheelWrap.posterMode #wheel,
+    .wheelWrap.posterMode .goldRim,
+    .wheelWrap.posterMode .innerRim,
+    .wheelWrap.posterMode .hub,
+    .wheelWrap.posterMode .pointer {
+      display: none;
+    }
+
+    .message {
+      margin-top: 4px;
+      min-height: 24px;
+      font-family: system-ui, sans-serif;
+      font-weight: 800;
+      color: #b995ff;
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .statusPanel {
+      align-self: center;
+      padding: 16px 14px;
+      min-height: 188px;
+      font-family: system-ui, sans-serif;
+      font-weight: 800;
+    }
+
+    .statusTitle {
+      text-align: center;
+      color: var(--muted);
+      font: 900 1.18rem/1 Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .statusRow {
+      display: grid;
+      grid-template-columns: 25px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin: 14px 0;
+    }
+    .dot { width: 22px; height: 22px; border-radius: 50%; background: #fff; }
+    .dot.gray { background: #aaa; }
+    .statusNum { grid-column: 2; font: 900 1.55rem/1.1 system-ui, sans-serif; }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 16px;
+      top: -20px;
+      animation: fall 2.8s linear forwards;
+      z-index: 100;
+    }
+    @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: .5; } }
+
+    body.finalTwoMode::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(circle at 50% 32%, rgba(255, 209, 102, 0.24), transparent 32%), radial-gradient(circle at 12% 18%, rgba(239, 71, 111, 0.24), transparent 20%), radial-gradient(circle at 88% 20%, rgba(6, 214, 160, 0.18), transparent 22%);
+      animation: finalPulse 1.05s ease-in-out infinite alternate;
+    }
+    body.finalTwoMode .wheelWrap { animation: finalWheelGlow .92s ease-in-out infinite alternate; }
+    body.finalTwoMode .winnerBox { border-color: rgba(255, 209, 102, .9); box-shadow: 0 0 32px rgba(255, 209, 102, .38), 0 20px 70px rgba(0,0,0,.34); }
+    body.finalTwoMode #winnerBanner { animation: finalTextPulse .72s ease-in-out infinite alternate; }
+    body.finalRevealHold .wheelWrap { animation: finalWheelGlow .38s ease-in-out infinite alternate; }
+    @keyframes finalPulse { from { opacity: .45; filter: saturate(1); } to { opacity: .95; filter: saturate(1.35); } }
+    @keyframes finalWheelGlow { from { filter: drop-shadow(0 0 20px rgba(255, 209, 102, .28)) drop-shadow(0 24px 42px rgba(0,0,0,.46)); } to { filter: drop-shadow(0 0 52px rgba(255, 209, 102, .72)) drop-shadow(0 24px 42px rgba(0,0,0,.46)); } }
+    @keyframes finalTextPulse { from { transform: scale(1); } to { transform: scale(1.045); } }
+
+    @media (max-width: 1180px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; grid-template-columns: 320px 1fr; overflow: visible; }
+      .statusPanel { display: none; }
+      h1 { white-space: normal; }
+      .sidePanel, .centerStage { height: auto; }
+      .centerStage { min-height: 760px; }
+      .wheelArea { width: min(640px, 94vw); }
+      .peg { transform: rotate(var(--angle)) translateX(calc(min(640px, 94vw) * .435)); }
+    }
+    @media (max-width: 850px) {
+      .app { grid-template-columns: 1fr; padding: 14px; }
+      .sidePanel { order: 2; min-height: 520px; }
+      .centerStage { order: 1; min-height: auto; }
+      .wheelArea { width: min(560px, 94vw); }
+      #spinBtn { margin-top: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidePanel">
+      <div class="panelTitle">Add a Movie</div>
+      <input id="movieInput" type="text" placeholder="Enter movie title..." autocomplete="off" />
+      <button id="addBtn">Add Movie</button>
+
+      <div class="sectionTitle"><span>Actions</span></div>
+      <button id="shuffleBtn">Shuffle Order</button>
+      <button id="resetBtn">Clear All</button>
+      <button id="soundBtn" type="button">Sound On</button>
+
+      <div class="sectionTitle"><span id="moviesHeader">Movies (0)</span></div>
+      <div id="movieList" class="movieList"></div>
+      <button id="spinBtn" disabled>Spin the Wheel!</button>
+    </aside>
+
+    <main class="centerStage">
+      <h1>What movie AREN'T we watching?</h1>
+      <section class="winnerBox">
+        <div>
+          <div class="small" id="winnerLabel">We aren't watching:</div>
+          <div id="winnerBanner">Add Movies</div>
+        </div>
+      </section>
+
+      <section class="wheelArea">
+        <div class="stand"><div class="standBase"></div></div>
+        <div class="wheelWrap">
+          <div class="pointer"></div>
+          <div id="wheel"></div>
+          <div class="goldRim"></div>
+          <div class="innerRim"></div>
+          <div class="hub"></div>
+          <div class="posterFrame" id="posterFrame">
+            <img id="posterImage" alt="Winning movie poster" />
+            <div class="posterFallback" id="posterFallback">Finding Poster...</div>
+          </div>
+        </div>
+      </section>
+      <div class="message" id="currentResult">Titles are hidden until the wheel stops.</div>
+    </main>
+
+    <aside class="statusPanel">
+      <div class="statusTitle">Status</div>
+      <div class="statusRow"><span class="dot"></span><span>Remaining</span><span class="statusNum" id="remainingCount">0</span></div>
+      <div class="statusRow"><span class="dot gray"></span><span>Eliminated</span><span class="statusNum" id="eliminatedCount">0</span></div>
+    </aside>
+  </div>
+
+  <script>
+    const input = document.getElementById('movieInput');
+    const addBtn = document.getElementById('addBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const soundBtn = document.getElementById('soundBtn');
+    const spinBtn = document.getElementById('spinBtn');
+    const movieList = document.getElementById('movieList');
+    const moviesHeader = document.getElementById('moviesHeader');
+    const wheel = document.getElementById('wheel');
+    const currentResult = document.getElementById('currentResult');
+    const winnerBanner = document.getElementById('winnerBanner');
+    const pointer = document.querySelector('.pointer');
+    const wheelWrap = document.querySelector('.wheelWrap');
+    const posterFrame = document.getElementById('posterFrame');
+    const posterImage = document.getElementById('posterImage');
+    const posterFallback = document.getElementById('posterFallback');
+    const winnerLabel = document.getElementById('winnerLabel');
+    const remainingCount = document.getElementById('remainingCount');
+    const eliminatedCount = document.getElementById('eliminatedCount');
+
+    const colors = ['#ed1c24', '#ff7a12', '#ffc20e', '#39b54a', '#1f5bc1', '#7331a1', '#0fa0a6', '#f15bb5', '#00bbf9', '#8ac926', '#ff595e', '#6a4c93'];
+    let movies = [];
+    let eliminated = [];
+    let revealed = new Set();
+    let rotation = 0;
+    let spinning = false;
+    let soundEnabled = true;
+    let audioCtx = null;
+    let spinRumble = null;
+    let tickTimer = null;
+    let pegCount = 40;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playTone(freq, duration = 0.12, type = 'sine', volume = 0.12, when = 0) {
+      if (!soundEnabled) return;
+      const ctx = getAudioContext();
+      const start = ctx.currentTime + when;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + duration + 0.03);
+    }
+
+    function playClick(volume = 0.18) {
+      if (!soundEnabled) return;
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+      const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * 0.018));
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+      }
+      const noise = ctx.createBufferSource();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      filter.type = 'highpass';
+      filter.frequency.value = 1300;
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
+      noise.buffer = buffer;
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 0.03);
+    }
+
+    function startSpinSound(duration = 5200) {
+      if (!soundEnabled) return;
+      const ctx = getAudioContext();
+      stopSpinSound();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(92, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(36, ctx.currentTime + duration / 1000);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.012, ctx.currentTime + duration / 1000);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      spinRumble = { osc, gain };
+    }
+
+    function stopSpinSound() {
+      if (tickTimer) {
+        clearTimeout(tickTimer);
+        tickTimer = null;
+      }
+      if (spinRumble && audioCtx) {
+        const now = audioCtx.currentTime;
+        try {
+          spinRumble.gain.gain.cancelScheduledValues(now);
+          spinRumble.gain.gain.setValueAtTime(Math.max(spinRumble.gain.gain.value, 0.0001), now);
+          spinRumble.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+          spinRumble.osc.stop(now + 0.16);
+        } catch (e) {}
+      }
+      spinRumble = null;
+    }
+
+    function playRevealSound() {
+      playTone(523.25, 0.09, 'triangle', 0.13, 0);
+      playTone(659.25, 0.11, 'triangle', 0.12, 0.08);
+      playTone(783.99, 0.16, 'triangle', 0.11, 0.17);
+    }
+
+    function playLineSound() {
+      playTone(220, 0.11, 'sawtooth', 0.10, 0);
+      playTone(164.81, 0.14, 'sawtooth', 0.09, 0.10);
+    }
+
+    function playFinalTwoTension(duration = 8200) {
+      if (!soundEnabled) return null;
+      const ctx = getAudioContext();
+      const start = ctx.currentTime;
+      const end = start + duration / 1000;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(92, start);
+      osc.frequency.exponentialRampToValueAtTime(138, end);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.055, start + 0.5);
+      gain.gain.exponentialRampToValueAtTime(0.018, end);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(end + 0.05);
+      return { osc, gain };
+    }
+
+    function playDrumroll(duration = 2100) {
+      if (!soundEnabled) return;
+      const start = performance.now();
+      function hit() {
+        const elapsed = performance.now() - start;
+        if (elapsed > duration) return;
+        const progress = elapsed / duration;
+        playClick(0.08 + progress * 0.08);
+        setTimeout(hit, Math.max(45, 115 - progress * 82));
+      }
+      hit();
+    }
+
+    function playWinnerSound() {
+      const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.51];
+      notes.forEach((note, i) => playTone(note, i === notes.length - 1 ? 0.36 : 0.14, 'square', 0.10, i * 0.12));
+    }
+
+
+    function flickPointer() {
+      if (!pointer) return;
+      pointer.classList.remove('flick');
+      // Force the browser to restart the CSS animation without throwing errors.
+      void pointer.offsetWidth;
+      pointer.classList.add('flick');
+      window.clearTimeout(pointer._flickTimer);
+      pointer._flickTimer = window.setTimeout(() => pointer.classList.remove('flick'), 150);
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      soundBtn.textContent = soundEnabled ? 'Sound On' : 'Muted';
+      soundBtn.classList.toggle('muted', !soundEnabled);
+      if (!soundEnabled) stopSpinSound();
+      else playTone(880, 0.08, 'triangle', 0.08);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag]));
+    }
+
+    function secretText(title) {
+      return '•'.repeat(Math.max(8, Math.min(16, title.length)));
+    }
+
+    function activeItems() {
+      return movies.map((movie, index) => ({ movie, index })).filter(item => !eliminated.includes(item.index));
+    }
+
+    function renderList() {
+      movieList.innerHTML = '';
+      moviesHeader.textContent = `Movies (${movies.length})`;
+
+      movies.forEach((movie, index) => {
+        const item = document.createElement('div');
+        item.className = 'movieItem';
+
+        const num = document.createElement('span');
+        num.className = 'movieNumber';
+        num.textContent = index + 1;
+
+        const title = document.createElement('span');
+        const isRevealed = revealed.has(index);
+        title.className = isRevealed ? 'revealedTitle' : 'hiddenTitle';
+        title.textContent = isRevealed ? movie : secretText(movie);
+
+        const remove = document.createElement('button');
+        remove.className = 'removeBtn';
+        remove.textContent = '×';
+        remove.title = 'Remove movie';
+        remove.disabled = spinning || eliminated.length > 0;
+        remove.onclick = () => {
+          movies.splice(index, 1);
+          eliminated = eliminated.map(i => i > index ? i - 1 : i).filter(i => i !== index);
+          revealed = new Set([...revealed].map(i => i > index ? i - 1 : i).filter(i => i !== index));
+          render();
+        };
+
+        item.append(num, title, remove);
+        movieList.appendChild(item);
+      });
+    }
+
+    function renderWheel() {
+      wheel.innerHTML = '';
+      const active = activeItems();
+      const total = active.length || movies.length || 1;
+      const slice = 360 / total;
+      const segments = [];
+
+      for (let i = 0; i < total; i++) {
+        const start = i * slice;
+        const end = (i + 1) * slice;
+        segments.push(`${colors[i % colors.length]} ${start}deg ${end}deg`);
+      }
+
+      const face = document.createElement('div');
+      face.className = 'wheelFace';
+      face.style.setProperty('--segments', segments.join(', '));
+      wheel.appendChild(face);
+
+      for (let i = 0; i < total; i++) {
+        const divider = document.createElement('div');
+        divider.className = 'divider';
+        divider.style.setProperty('--angle', `${i * slice - 90}deg`);
+        wheel.appendChild(divider);
+      }
+
+      // Pegs are now mounted inside the wheel, so they rotate with it and pass under the pointer.
+      pegCount = Math.max(44, Math.min(96, total * 8));
+      const pegStep = 360 / pegCount;
+      for (let i = 0; i < pegCount; i++) {
+        const peg = document.createElement('div');
+        peg.className = 'peg';
+        peg.style.setProperty('--angle', `${i * pegStep - 90}deg`);
+        wheel.appendChild(peg);
+      }
+    }
+
+    function cleanPegs() {
+      document.querySelectorAll('.wheelWrap > .peg').forEach(peg => peg.remove());
+    }
+
+    function render() {
+      if (activeItems().length !== 1 || spinning) showWheelMode();
+      cleanPegs();
+      renderList();
+      renderWheel();
+      const remaining = activeItems().length;
+      remainingCount.textContent = remaining;
+      eliminatedCount.textContent = eliminated.length;
+
+      spinBtn.disabled = spinning || remaining < 2;
+      addBtn.disabled = spinning || eliminated.length > 0;
+      shuffleBtn.disabled = spinning || movies.length < 2 || eliminated.length > 0;
+      input.disabled = spinning || eliminated.length > 0;
+
+      if (!movies.length) {
+        winnerLabel.textContent = "We aren't watching:";
+        winnerBanner.textContent = 'Add Movies';
+        currentResult.textContent = 'Titles are hidden until the wheel stops.';
+      } else if (!spinning && eliminated.length === 0) {
+        winnerLabel.textContent = 'Ready to play:';
+        winnerBanner.textContent = `${movies.length} Loaded`;
+        currentResult.textContent = 'Titles are hidden until the wheel stops.';
+      }
+    }
+
+    function addMovie() {
+      const title = input.value.trim();
+      if (!title) return;
+      if (movies.some(m => m.toLowerCase() === title.toLowerCase())) {
+        winnerLabel.textContent = 'Duplicate title';
+        winnerBanner.textContent = 'Try Another';
+        currentResult.textContent = 'That movie is already on the wheel.';
+        return;
+      }
+      movies.push(title);
+      spinBtn.textContent = 'Spin Wheel';
+      input.value = '';
+      showWheelMode();
+      render();
+      input.focus();
+    }
+
+    function shuffleMovies() {
+      for (let i = movies.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [movies[i], movies[j]] = [movies[j], movies[i]];
+      }
+      render();
+    }
+
+
+
+    function showWheelMode() {
+      document.querySelector('.winnerBox').classList.remove('hiddenAtFinish');
+      wheelWrap.classList.remove('posterMode');
+      posterFrame.classList.remove('visible', 'loading', 'noPoster');
+      posterImage.removeAttribute('src');
+      posterFallback.textContent = '';
+    }
+
+    function showFinalTextFrame(title) {
+      posterImage.removeAttribute('src');
+      posterFrame.classList.add('visible', 'noPoster');
+      posterFrame.classList.remove('loading');
+      wheelWrap.classList.add('posterMode');
+      document.querySelector('.winnerBox').classList.add('hiddenAtFinish');
+      posterFallback.innerHTML = `<span class="finalIntro">Tonight's movie is...</span><span class="finalTitle">${escapeHtml(title)}</span>`;
+    }
+
+    function normalizeDegrees(value) {
+      return ((value % 360) + 360) % 360;
+    }
+
+    function evaluateLanding(total, finalRotation) {
+      const slice = 360 / total;
+      const pointerAngle = 0;
+      // The pointer is at the top of the wheel. In CSS conic-gradient coordinates, 0deg is top.
+      // Using 270deg made normal landings look like boundary hits too often after the peg update.
+      const wheelAngleAtPointer = normalizeDegrees(pointerAngle - finalRotation);
+      const positionInSlice = wheelAngleAtPointer % slice;
+      const distanceToLine = Math.min(positionInSlice, slice - positionInSlice);
+      const chosenActiveIndex = Math.floor(wheelAngleAtPointer / slice) % total;
+      return { chosenActiveIndex, distanceToLine, slice };
+    }
+
+    function animatePhysicsSpin(active, attempt = 1, finalTwoDrama = false) {
+      const total = active.length;
+      const slice = 360 / total;
+      const lineThreshold = Math.min(1.25, slice * 0.025);
+      const startRotation = rotation;
+      const initialVelocity = finalTwoDrama ? 900 + Math.random() * 260 : 1120 + Math.random() * 640; // degrees per second
+      const friction = finalTwoDrama ? 92 + Math.random() * 36 : 215 + Math.random() * 115; // degrees per second squared
+      const duration = initialVelocity / friction;
+      const totalTravel = (initialVelocity * initialVelocity) / (2 * friction);
+      const finalRotation = startRotation + totalTravel;
+      const landing = evaluateLanding(total, finalRotation);
+      const pegStep = 360 / pegCount;
+      const tickReferenceAngle = 270;
+      let lastTick = Math.floor(normalizeDegrees(tickReferenceAngle - startRotation) / pegStep);
+      let startTime = null;
+
+      wheel.style.transition = 'none';
+      if (finalTwoDrama) document.body.classList.add('finalTwoMode');
+      if (finalTwoDrama) playFinalTwoTension(duration * 1000);
+      startSpinSound(duration * 1000);
+
+      function frame(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = Math.min((timestamp - startTime) / 1000, duration);
+        const travelled = initialVelocity * elapsed - 0.5 * friction * elapsed * elapsed;
+        rotation = startRotation + travelled;
+        wheel.style.transform = `rotate(${rotation}deg)`;
+
+        const tick = Math.floor(normalizeDegrees(tickReferenceAngle - rotation) / pegStep);
+        if (tick !== lastTick) {
+          const progress = elapsed / duration;
+          // One click per animation frame keeps dense pegs responsive without overwhelming audio.
+          playClick(Math.max(0.025, 0.12 - progress * 0.075));
+          flickPointer();
+          lastTick = tick;
+        }
+
+        if (elapsed < duration) {
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        rotation = finalRotation;
+        wheel.style.transform = `rotate(${rotation}deg)`;
+        stopSpinSound();
+
+        const chosen = active[landing.chosenActiveIndex];
+        if (landing.distanceToLine <= lineThreshold && attempt < 4) {
+          playLineSound();
+          winnerLabel.textContent = 'Too close to call:';
+          winnerBanner.textContent = 'Re-Spin!';
+          currentResult.textContent = 'The pointer landed on a line, so nobody is eliminated.';
+          setTimeout(() => animatePhysicsSpin(active, attempt + 1, finalTwoDrama), 1050);
+          return;
+        }
+
+        if (finalTwoDrama) {
+          document.body.classList.remove('finalTwoMode');
+          document.body.classList.add('finalRevealHold');
+          winnerLabel.textContent = 'Final reveal:';
+          winnerBanner.textContent = 'And the movie is...';
+          currentResult.textContent = 'The final choice is locked in.';
+          playDrumroll(1900);
+          setTimeout(() => revealAndEliminate(chosen.index, chosen.movie), 2050);
+        } else {
+          revealAndEliminate(chosen.index, chosen.movie);
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function spin() {
+      const active = activeItems();
+      if (spinning || active.length < 2) return;
+      spinning = true;
+      showWheelMode();
+      spinBtn.disabled = true;
+      addBtn.disabled = true;
+      shuffleBtn.disabled = true;
+      input.disabled = true;
+      const finalTwoDrama = active.length === 2;
+      winnerLabel.textContent = finalTwoDrama ? 'Final two!' : 'Spinning...';
+      winnerBanner.textContent = finalTwoDrama ? 'Dramatic Spin' : '•••••';
+      currentResult.textContent = finalTwoDrama
+        ? "Two movies remain. One final elimination decides tonight's movie."
+        : 'The wheel is choosing what you are NOT watching.';
+
+      animatePhysicsSpin(active, 1, finalTwoDrama);
+    }
+
+    function revealAndEliminate(index, title) {
+      document.body.classList.remove('finalTwoMode', 'finalRevealHold');
+      stopSpinSound();
+      playRevealSound();
+      revealed.add(index);
+      winnerLabel.textContent = "We aren't watching:";
+      winnerBanner.textContent = title;
+      currentResult.textContent = `${title} has been eliminated.`;
+      renderList();
+
+      setTimeout(() => {
+        eliminated.push(index);
+        const remaining = activeItems();
+
+        if (remaining.length === 1) {
+          finishGame(remaining[0].movie, remaining[0].index);
+          return;
+        }
+
+        spinning = false;
+        spinBtn.textContent = 'Spin Again';
+        render();
+        winnerLabel.textContent = "Last eliminated:";
+        winnerBanner.textContent = title;
+        currentResult.textContent = `${title} has been eliminated. Press Spin Again to continue.`;
+      }, 1900);
+    }
+
+    function finishGame(winner, winnerIndex) {
+      spinning = false;
+      revealed.add(winnerIndex);
+      winnerLabel.textContent = "Tonight's movie:";
+      winnerBanner.textContent = winner;
+      currentResult.textContent = '';
+      renderList();
+      spinBtn.disabled = true;
+      addBtn.disabled = true;
+      shuffleBtn.disabled = true;
+      input.disabled = true;
+      cleanPegs();
+      renderWheel();
+      showFinalTextFrame(winner);
+      playWinnerSound();
+      celebrate();
+    }
+
+    function resetGame() {
+      stopSpinSound();
+      document.body.classList.remove('finalTwoMode', 'finalRevealHold');
+      movies = [];
+      eliminated = [];
+      revealed = new Set();
+      rotation = 0;
+      spinning = false;
+      wheel.style.transition = 'none';
+      wheel.style.transform = 'rotate(0deg)';
+      requestAnimationFrame(() => {
+        wheel.style.transition = 'transform 4.6s cubic-bezier(.12,.72,.08,1)';
+      });
+      input.value = '';
+      spinBtn.textContent = 'Spin Wheel';
+      showWheelMode();
+      render();
+      input.focus();
+    }
+
+    function celebrate() {
+      for (let i = 0; i < 90; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.background = colors[i % colors.length];
+        c.style.animationDelay = Math.random() * .8 + 's';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 3800);
+      }
+    }
+
+    addBtn.addEventListener('click', addMovie);
+    shuffleBtn.addEventListener('click', shuffleMovies);
+    resetBtn.addEventListener('click', resetGame);
+    soundBtn.addEventListener('click', toggleSound);
+    spinBtn.addEventListener('click', spin);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addMovie();
+    });
+
+    render();
+  </script>
+</body>
+</html>
